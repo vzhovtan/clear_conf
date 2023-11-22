@@ -53,3 +53,20 @@ func TestValidIPv6(t *testing.T) {
 		}
 	}
 }
+
+func TestWrapOver(t *testing.T) {
+	var tests = []struct {
+		input string
+		want  string
+	}{
+		{"10", "10"},
+		{"244", "244"},
+		{"300", "44"},
+		{"512", "0"},
+	}
+	for _, test := range tests {
+		if got := wrapOver(test.input); got != test.want {
+			t.Errorf("wrapOver(%q) = %v", test.input, got)
+		}
+	}
+}

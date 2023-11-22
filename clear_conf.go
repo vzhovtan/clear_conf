@@ -2,16 +2,27 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
+	"log"
 	"math/rand"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
-	"time"
 )
 
 func main() {
-	scanner := bufio.NewScanner(os.Stdin)
+	fname := flag.String("fName", "", "Config file to sanitize")
+	flag.Parse()
+
+	file, err := os.Open(*fname)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		inp := scanner.Text()
 		sanitize(inp)
@@ -80,17 +91,32 @@ func validIP6add(ip6Address string) bool {
 }
 
 func newIPv4(addr string) string {
-	rand.Seed(time.Now().UnixNano())
-	ipv4min := 10
-	ipv4max := 240
-	two := fmt.Sprint(rand.Intn(ipv4max-ipv4min+1) + ipv4min)
-	three := fmt.Sprint(rand.Intn(ipv4max-ipv4min+1) + ipv4min)
-	four := fmt.Sprint(rand.Intn(ipv4max-ipv4min+1) + ipv4min)
 	if strings.Contains(addr, "/") {
 		mask := strings.Split(addr, "/")[1]
-		return fmt.Sprint("192.", two, ".", three, ".", four, "/", mask)
+		oldv4 := strings.Split(addr, "/")[0]
+		newv4 := buildNewV4(oldv4)
+		return fmt.Sprint(newv4, "/", mask)
 	}
-	return fmt.Sprint("192.", two, ".", three, ".", four)
+	return buildNewV4(addr)
+}
+
+func buildNewV4(inp string) string {
+	newv4slice := []string{}
+	oldv4 := strings.Split(inp, ".")
+	if oldv4[0] != "0" {
+		for idx, item := range oldv4 {
+			if idx == 0 {
+				newv4slice = append(newv4slice, fmt.Sprint(item))
+			} else {
+				chars := strings.Split(item, "")
+				randomv4 := randomizeStrSlice(chars)
+				v4elem := wrapOver(strings.Join(randomv4, ""))
+				newv4slice = append(newv4slice, v4elem)
+			}
+		}
+		return strings.Join(newv4slice, ".")
+	}
+	return inp
 }
 
 func newIPv6(addr string) string {
@@ -124,4 +150,12 @@ func randomizeStrSlice(slice []string) []string {
 		slice[i], slice[j] = slice[j], slice[i]
 	})
 	return slice
+}
+
+func wrapOver(inp string) string {
+	num, err := strconv.Atoi(inp)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return fmt.Sprintf("%d", byte(num))
 }
