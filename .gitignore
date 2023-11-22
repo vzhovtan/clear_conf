@@ -1,0 +1,3 @@
+# ignoring ./testdata because it contains private config information
+
+testdata/
